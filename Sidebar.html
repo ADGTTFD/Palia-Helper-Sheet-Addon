@@ -1,0 +1,330 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+
+  <base target="_top">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+
+  <?!= include('Styles'); ?>
+
+</head>
+
+<body>
+
+<div id="app">
+
+  <!-- ========================================================= -->
+  <!-- HEADER -->
+  <!-- ========================================================= -->
+
+  <header class="header">
+
+    <div class="title">
+      🐟 Palia Fish Assistant
+    </div>
+
+    <div class="subtitle">
+      Profit Guide Lookup
+    </div>
+
+  </header>
+
+
+  <!-- ========================================================= -->
+  <!-- TAB BAR -->
+  <!-- ========================================================= -->
+
+  <nav class="tabBar">
+
+    <button
+      id="lookupTab"
+      class="tabButton active">
+
+      🔍 Lookup
+
+    </button>
+
+    <button
+      id="settingsTab"
+      class="tabButton">
+
+      ⚙ Settings
+
+    </button>
+
+    <button
+      id="helpTab"
+      class="tabButton">
+
+      ❓ Help
+
+    </button>
+
+  </nav>
+
+
+  <!-- ========================================================= -->
+  <!-- LOOKUP PANEL -->
+  <!-- ========================================================= -->
+
+  <div id="lookupPanel">
+
+    <section class="card">
+
+      <label class="label">
+        Fish
+      </label>
+
+      <input
+        id="fishSearch"
+        class="textbox"
+        type="text"
+        placeholder="Search fish..."
+        autocomplete="off">
+
+      <div
+        id="fishList"
+        class="listBox">
+
+        <div class="loading">
+
+          Loading fish...
+
+        </div>
+
+      </div>
+
+
+      <label class="label">
+
+        Recipe
+
+      </label>
+
+      <input
+        id="recipeSearch"
+        class="textbox"
+        type="text"
+        placeholder="Search recipe..."
+        autocomplete="off">
+
+      <div
+        id="recipeList"
+        class="listBox">
+
+        <div class="loading">
+
+          Loading recipes...
+
+        </div>
+
+      </div>
+
+
+      <!-- ===================================================== -->
+      <!-- QUANTITY -->
+      <!-- ===================================================== -->
+
+      <label class="label">
+
+        Quantity
+
+      </label>
+
+      <input
+        id="quantityInput"
+        class="textbox quantityBox"
+        type="number"
+        min="1"
+        step="1"
+        value="1">
+
+
+      <!-- ===================================================== -->
+      <!-- OPTIONS -->
+      <!-- ===================================================== -->
+
+      <div class="options">
+
+        <label class="checkbox">
+
+          <input
+            id="highlightToggle"
+            type="checkbox"
+            checked>
+
+          Highlight matching worksheet cells
+
+        </label>
+
+      </div>
+
+
+      <button
+        id="lookupButton"
+        class="lookupButton">
+
+        🔍 Look Up
+
+      </button>
+
+    </section>
+
+
+
+    <!-- ========================================================= -->
+    <!-- STATUS -->
+    <!-- ========================================================= -->
+
+    <div
+      id="status"
+      class="status">
+
+      Initialising assistant...
+
+    </div>
+
+
+    <!-- ========================================================= -->
+    <!-- RESULTS -->
+    <!-- ========================================================= -->
+
+    <section
+      id="results"
+      class="results">
+
+      <div class="placeholder">
+
+        Select a fish and recipe to begin.
+
+      </div>
+
+    </section>
+
+  </div>
+
+
+
+  <!-- ========================================================= -->
+  <!-- SETTINGS PANEL -->
+  <!-- ========================================================= -->
+
+  <div
+    id="settingsPanel"
+    class="hidden">
+
+    <section class="card">
+
+      <h2>
+
+        ⚙ Settings
+
+      </h2>
+
+      <label class="checkbox">
+
+        <input
+          id="settingHighlight"
+          type="checkbox">
+
+        Highlight worksheet cells
+
+      </label>
+
+      <br><br>
+
+      <label class="checkbox">
+
+        <input
+          id="settingRemember"
+          type="checkbox">
+
+        Remember last lookup
+
+      </label>
+
+      <br><br>
+
+      <button
+        id="saveSettingsButton"
+        class="lookupButton">
+
+        Save Settings
+
+      </button>
+
+    </section>
+
+  </div>
+
+
+
+  <!-- ========================================================= -->
+  <!-- HELP PANEL -->
+  <!-- ========================================================= -->
+
+  <div
+    id="helpPanel"
+    class="hidden">
+
+    <section class="card">
+
+      <h2>
+
+        ❓ Help
+
+      </h2>
+
+      <p>
+
+        Search for a fish.
+
+      </p>
+
+      <p>
+
+        Select a recipe.
+
+      </p>
+
+      <p>
+
+        Enter a quantity.
+
+      </p>
+
+      <p>
+
+        Click <strong>Look Up</strong>.
+
+      </p>
+
+      <hr>
+
+      <p>
+
+        The spreadsheet is always the source of truth.
+
+      </p>
+
+      <hr>
+
+      <p>
+
+        Version 1.1
+
+      </p>
+
+    </section>
+
+  </div>
+
+</div>
+
+<?!= include('JavaScript'); ?>
+
+</body>
+
+</html>
