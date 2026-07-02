@@ -1,0 +1,2084 @@
+<script>
+"use strict";
+
+/* ==========================================================================
+   Palia Fish Assistant
+   JavaScript.html
+   Section 1 - Application Framework
+   ========================================================================== */
+
+/**
+ * --------------------------------------------------------------------------
+ * Global Application State
+ * --------------------------------------------------------------------------
+ */
+
+const App = {
+
+    fish: [],
+
+    recipes: [],
+
+    filteredFish: [],
+
+    filteredRecipes: [],
+
+    selectedFish: null,
+
+    selectedRecipe: null,
+
+    settings: null,
+
+    loading: false
+
+};
+
+
+/**
+ * --------------------------------------------------------------------------
+ * Cached DOM References
+ * --------------------------------------------------------------------------
+ */
+
+const UI = {};
+
+
+/**
+ * --------------------------------------------------------------------------
+ * Initialisation
+ * --------------------------------------------------------------------------
+ */
+
+document.addEventListener(
+    "DOMContentLoaded",
+    initialiseApplication
+);
+
+
+function initialiseApplication() {
+
+    cacheDom();
+
+    initialiseTabs();
+
+    initialiseFishSearch();
+
+    initialiseRecipeSearch();
+
+    initialiseSettings();
+
+    initialiseHelp();
+
+    UI.lookupButton.addEventListener(
+        "click",
+        performLookup
+    );
+
+    disableLookup();
+
+    setStatus("Loading assistant...");
+
+    loadUserSettings();
+
+}
+
+/**
+ * --------------------------------------------------------------------------
+ * Cache DOM Elements
+ * --------------------------------------------------------------------------
+ */
+
+function cacheDom() {
+
+    UI.fishSearch =
+        document.getElementById("fishSearch");
+
+    UI.recipeSearch =
+        document.getElementById("recipeSearch");
+
+    UI.fishList =
+        document.getElementById("fishList");
+
+    UI.recipeList =
+        document.getElementById("recipeList");
+
+    UI.lookupButton =
+        document.getElementById("lookupButton");
+
+    UI.results =
+        document.getElementById("results");
+
+    UI.status =
+        document.getElementById("status");
+
+    UI.highlight =
+        document.getElementById("highlightToggle");
+
+}
+
+
+/**
+ * --------------------------------------------------------------------------
+ * Loading State
+ * --------------------------------------------------------------------------
+ */
+
+function setLoading(isLoading) {
+
+    App.loading = isLoading;
+
+    UI.lookupButton.disabled = isLoading;
+
+    if (isLoading) {
+
+        UI.lookupButton.textContent =
+            "Loading...";
+
+    } else {
+
+        UI.lookupButton.textContent =
+            "🔍 Look Up";
+
+    }
+
+}
+
+
+/**
+ * --------------------------------------------------------------------------
+ * Status Bar
+ * --------------------------------------------------------------------------
+ */
+
+function setStatus(message) {
+
+    UI.status.textContent = message;
+
+}
+
+
+/**
+ * --------------------------------------------------------------------------
+ * Enable / Disable Lookup
+ * --------------------------------------------------------------------------
+ */
+
+function disableLookup() {
+
+    UI.lookupButton.disabled = true;
+
+}
+
+
+function enableLookup() {
+
+    const ready =
+
+        App.selectedFish !== null &&
+        App.selectedRecipe !== null &&
+        !App.loading;
+
+    UI.lookupButton.disabled = !ready;
+
+}
+
+
+/**
+ * --------------------------------------------------------------------------
+ * Utility Helpers
+ * --------------------------------------------------------------------------
+ */
+
+function escapeHtml(text) {
+
+    return String(text)
+
+        .replace(/&/g, "&amp;")
+
+        .replace(/</g, "&lt;")
+
+        .replace(/>/g, "&gt;")
+
+        .replace(/"/g, "&quot;")
+
+        .replace(/'/g, "&#39;");
+
+}
+
+
+function clearElement(element) {
+
+    while (element.firstChild) {
+
+        element.removeChild(
+            element.firstChild
+        );
+
+    }
+
+}
+
+
+/**
+ * --------------------------------------------------------------------------
+ * Placeholder Results
+ * --------------------------------------------------------------------------
+ */
+
+function showPlaceholder(message) {
+
+    UI.results.innerHTML =
+
+        '<div class="placeholder">' +
+
+        escapeHtml(message) +
+
+        '</div>';
+
+}
+
+/* ==========================================================================
+   Section 2 - Fish Search Component
+   ========================================================================== */
+
+/**
+ * --------------------------------------------------------------------------
+ * Fish List
+ * --------------------------------------------------------------------------
+ */
+
+/**
+ * Stores the complete fish list and displays it.
+ */
+function setFishList(fish) {
+
+    App.fish = Array.isArray(fish)
+        ? [...fish].sort((a, b) =>
+            a.localeCompare(b, undefined, { sensitivity: "base" }))
+        : [];
+
+    App.filteredFish = [...App.fish];
+
+    renderFishList();
+
+}
+
+
+/**
+ * Filters the fish list using the search box.
+ */
+function filterFishList() {
+
+    const search = UI.fishSearch.value
+        .trim()
+        .toLowerCase();
+
+    if (search === "") {
+
+        App.filteredFish = [...App.fish];
+
+    } else {
+
+        App.filteredFish = App.fish.filter(fish =>
+            fish.toLowerCase().includes(search)
+        );
+
+    }
+
+    renderFishList();
+
+}
+
+
+/**
+ * Draws the filtered fish list.
+ */
+function renderFishList() {
+
+    clearElement(UI.fishList);
+
+    if (App.filteredFish.length === 0) {
+
+        const empty = document.createElement("div");
+
+        empty.className = "loading";
+
+        empty.textContent = "No fish found.";
+
+        UI.fishList.appendChild(empty);
+
+        return;
+
+    }
+
+    App.filteredFish.forEach(fish => {
+
+        const item = document.createElement("div");
+
+        item.className = "listItem";
+
+        if (fish === App.selectedFish) {
+            item.classList.add("selected");
+        }
+
+        item.textContent = "🐟 " + fish;
+
+        item.dataset.fish = fish;
+
+        item.addEventListener(
+            "click",
+            () => selectFish(fish)
+        );
+
+        UI.fishList.appendChild(item);
+
+    });
+
+}
+
+
+/**
+ * Selects a fish.
+ */
+function selectFish(fish) {
+
+    App.selectedFish = fish;
+
+    renderFishList();
+
+    enableLookup();
+
+    setStatus("Selected fish: " + fish);
+
+}
+
+
+/**
+ * Clears the current fish selection.
+ */
+function clearFishSelection() {
+
+    App.selectedFish = null;
+
+    renderFishList();
+
+    enableLookup();
+
+}
+
+
+/**
+ * Returns the currently selected fish.
+ */
+function getSelectedFish() {
+
+    return App.selectedFish;
+
+}
+
+
+/**
+ * --------------------------------------------------------------------------
+ * Fish Search Events
+ * --------------------------------------------------------------------------
+ */
+
+function initialiseFishSearch() {
+
+    UI.fishSearch.addEventListener(
+        "input",
+        filterFishList
+    );
+
+    UI.fishSearch.addEventListener(
+        "search",
+        filterFishList
+    );
+
+}
+
+/* ==========================================================================
+   Section 3 - Recipe Search Component
+   ========================================================================== */
+
+/**
+ * --------------------------------------------------------------------------
+ * Recipe List
+ * --------------------------------------------------------------------------
+ */
+
+/**
+ * Stores the complete recipe list and displays it.
+ */
+function setRecipeList(recipes) {
+
+    App.recipes = Array.isArray(recipes)
+        ? [...recipes].sort((a, b) =>
+            a.localeCompare(b, undefined, { sensitivity: "base" }))
+        : [];
+
+    App.filteredRecipes = [...App.recipes];
+
+    renderRecipeList();
+
+}
+
+
+/**
+ * Filters recipes using the search box.
+ */
+function filterRecipeList() {
+
+    const search = UI.recipeSearch.value
+        .trim()
+        .toLowerCase();
+
+    if (search === "") {
+
+        App.filteredRecipes = [...App.recipes];
+
+    } else {
+
+        App.filteredRecipes = App.recipes.filter(recipe =>
+            recipe.toLowerCase().includes(search)
+        );
+
+    }
+
+    renderRecipeList();
+
+}
+
+
+/**
+ * Draws the filtered recipe list.
+ */
+function renderRecipeList() {
+
+    clearElement(UI.recipeList);
+
+    if (App.filteredRecipes.length === 0) {
+
+        const empty = document.createElement("div");
+
+        empty.className = "loading";
+
+        empty.textContent = "No recipes found.";
+
+        UI.recipeList.appendChild(empty);
+
+        return;
+
+    }
+
+    App.filteredRecipes.forEach(recipe => {
+
+        const item = document.createElement("div");
+
+        item.className = "listItem";
+
+        if (recipe === App.selectedRecipe) {
+            item.classList.add("selected");
+        }
+
+        item.textContent = "🍳 " + recipe;
+
+        item.dataset.recipe = recipe;
+
+        item.addEventListener(
+            "click",
+            () => selectRecipe(recipe)
+        );
+
+        UI.recipeList.appendChild(item);
+
+    });
+
+}
+
+
+/**
+ * Selects a recipe.
+ */
+function selectRecipe(recipe) {
+
+    App.selectedRecipe = recipe;
+
+    renderRecipeList();
+
+    enableLookup();
+
+    setStatus("Selected recipe: " + recipe);
+
+}
+
+
+/**
+ * Clears the current recipe selection.
+ */
+function clearRecipeSelection() {
+
+    App.selectedRecipe = null;
+
+    renderRecipeList();
+
+    enableLookup();
+
+}
+
+
+/**
+ * Returns the selected recipe.
+ */
+function getSelectedRecipe() {
+
+    return App.selectedRecipe;
+
+}
+
+
+/**
+ * --------------------------------------------------------------------------
+ * Recipe Search Events
+ * --------------------------------------------------------------------------
+ */
+
+function initialiseRecipeSearch() {
+
+    UI.recipeSearch.addEventListener(
+        "input",
+        filterRecipeList
+    );
+
+    UI.recipeSearch.addEventListener(
+        "search",
+        filterRecipeList
+    );
+
+}
+
+/* ==========================================================================
+   Section 4 - Google Apps Script API Layer
+   ========================================================================== */
+
+/**
+ * --------------------------------------------------------------------------
+ * Initial Data Loading
+ * --------------------------------------------------------------------------
+ */
+
+function loadUserSettings() {
+
+    setLoading(true);
+
+    google.script.run
+        .withSuccessHandler(onSettingsLoaded)
+        .withFailureHandler(onServerError)
+        .getUserSettings();
+
+}
+
+
+function onSettingsLoaded(settings) {
+
+    App.settings = settings || {};
+
+    UI.highlight.checked =
+        App.settings.autoHighlight !== false;
+
+    loadFishList();
+
+}
+
+
+/**
+ * --------------------------------------------------------------------------
+ * Fish List
+ * --------------------------------------------------------------------------
+ */
+
+function loadFishList() {
+
+    setStatus("Loading fish...");
+
+    google.script.run
+        .withSuccessHandler(onFishLoaded)
+        .withFailureHandler(onServerError)
+        .getFishList();
+
+}
+
+
+function onFishLoaded(fish) {
+
+    setFishList(fish);
+
+    loadRecipeList();
+
+}
+
+
+/**
+ * --------------------------------------------------------------------------
+ * Recipe List
+ * --------------------------------------------------------------------------
+ */
+
+function loadRecipeList() {
+
+    setStatus("Loading recipes...");
+
+    google.script.run
+        .withSuccessHandler(onRecipesLoaded)
+        .withFailureHandler(onServerError)
+        .getRecipeList();
+
+}
+
+
+
+/**
+ * --------------------------------------------------------------------------
+ * Lookup
+ * --------------------------------------------------------------------------
+ */
+
+function performLookup() {
+
+    if (!App.selectedFish) {
+
+        setStatus("Please select a fish.");
+
+        return;
+
+    }
+
+    if (!App.selectedRecipe) {
+
+        setStatus("Please select a recipe.");
+
+        return;
+
+    }
+
+    setLoading(true);
+
+    setStatus("Searching...");
+
+    google.script.run
+
+        .withSuccessHandler(onLookupComplete)
+
+        .withFailureHandler(onServerError)
+
+        .lookupFishRecipe(
+            App.selectedFish,
+            App.selectedRecipe
+        );
+
+}
+
+
+function onLookupComplete(result) {
+
+    setLoading(false);
+
+    renderLookupResult(result);
+
+    setStatus("Lookup complete.");
+
+}
+
+/* ==========================================================================
+   Part 7 - Results Renderer
+   ========================================================================== */
+
+/**
+ * --------------------------------------------------------------------------
+ * Render Lookup Result
+ * --------------------------------------------------------------------------
+ */
+
+function renderLookupResult(result) {
+
+    clearElement(UI.results);
+
+    if (!result ||
+        !result.variants ||
+        result.variants.length === 0) {
+
+        showPlaceholder(
+            "No matching values were found."
+        );
+
+        return;
+
+    }
+
+    const card = document.createElement("div");
+
+    card.className = "resultCard";
+
+    card.appendChild(
+        createResultHeader(result)
+    );
+
+    result.variants.forEach(function (variant) {
+
+        card.appendChild(
+
+            createVariantCard(
+                variant,
+                result.quantity
+            )
+
+        );
+
+    });
+
+    UI.results.appendChild(card);
+
+}
+
+
+/**
+ * --------------------------------------------------------------------------
+ * Header
+ * --------------------------------------------------------------------------
+ */
+
+function createResultHeader(result) {
+
+    const container =
+        document.createElement("div");
+
+    container.className =
+        "resultHeader";
+
+    const fish =
+        document.createElement("div");
+
+    fish.className =
+        "resultTitle";
+
+    fish.textContent =
+        "🐟 " + result.fish;
+
+    const recipe =
+        document.createElement("div");
+
+    recipe.className =
+        "recipeTitle";
+
+    recipe.textContent =
+        "🍳 " + result.recipe;
+
+    container.appendChild(fish);
+
+    container.appendChild(recipe);
+
+    return container;
+
+}
+
+
+/**
+ * --------------------------------------------------------------------------
+ * Variant Card
+ * --------------------------------------------------------------------------
+ */
+
+function createVariantCard(
+    variant,
+    quantity
+) {
+
+    const card =
+        document.createElement("div");
+
+    card.className =
+        "variantCard";
+
+    // Variant name
+
+    const name =
+        document.createElement("div");
+
+    name.className =
+        "variantTitle";
+
+    name.textContent =
+        getVariantIcon(
+            variant.label
+        ) +
+        " " +
+        variant.label;
+
+    // Single Value
+
+    const singleLabel =
+        document.createElement("div");
+
+    singleLabel.className =
+        "valueLabel";
+
+    singleLabel.textContent =
+        "Per Recipe";
+
+    const singleValue =
+        document.createElement("div");
+
+    singleValue.className =
+        "singleValue";
+
+    singleValue.textContent =
+        formatGold(
+            variant.value
+        );
+
+    // Quantity
+
+    const totalLabel =
+        document.createElement("div");
+
+    totalLabel.className =
+        "valueLabel";
+
+    totalLabel.textContent =
+        quantity + " Recipes";
+
+    const totalValue =
+        document.createElement("div");
+
+    totalValue.className =
+        "totalValue";
+
+    totalValue.textContent =
+        formatGold(
+            variant.total
+        );
+
+    card.appendChild(name);
+
+    card.appendChild(singleLabel);
+
+    card.appendChild(singleValue);
+
+    card.appendChild(totalLabel);
+
+    card.appendChild(totalValue);
+
+    return card;
+
+}
+
+
+/**
+ * --------------------------------------------------------------------------
+ * Variant Icons
+ * --------------------------------------------------------------------------
+ */
+
+function getVariantIcon(label) {
+
+    const text =
+        String(label)
+        .toLowerCase();
+
+    if (text.includes("dari")) {
+
+        return "🌿";
+
+    }
+
+    if (text.includes("heat")) {
+
+        return "🔥";
+
+    }
+
+    if (text.includes("sprout")) {
+
+        return "🌱";
+
+    }
+
+    if (text.includes("sl")) {
+
+        return "🌱";
+
+    }
+
+    if (text.includes("star")) {
+
+        return "⭐";
+
+    }
+
+    return "🐟";
+
+}
+
+
+/**
+ * --------------------------------------------------------------------------
+ * Gold Formatter
+ * --------------------------------------------------------------------------
+ */
+
+function formatGold(value) {
+
+    if (
+        value === null ||
+        value === undefined ||
+        value === ""
+    ) {
+
+        return "-";
+
+    }
+
+    const number =
+        Number(value);
+
+    if (Number.isNaN(number)) {
+
+        return String(value);
+
+    }
+
+    return (
+        number.toLocaleString()
+        + " Gold"
+    );
+
+}
+
+/**
+ * --------------------------------------------------------------------------
+ * Restore Last Lookup
+ * --------------------------------------------------------------------------
+ */
+
+function restorePreviousLookup() {
+
+    if (!App.settings) {
+        return;
+    }
+
+    if (App.settings.lastFish) {
+
+        selectFish(
+            App.settings.lastFish
+        );
+
+        UI.fishSearch.value =
+            App.settings.lastFish;
+
+        filterFishList();
+
+    }
+
+    if (App.settings.lastRecipe) {
+
+        selectRecipe(
+            App.settings.lastRecipe
+        );
+
+        UI.recipeSearch.value =
+            App.settings.lastRecipe;
+
+        filterRecipeList();
+
+    }
+
+}
+
+
+/**
+ * --------------------------------------------------------------------------
+ * Error Handling
+ * --------------------------------------------------------------------------
+ */
+
+function onServerError(error) {
+
+    setLoading(false);
+
+    console.error(error);
+
+    setStatus("An error occurred.");
+
+    showPlaceholder(
+
+        error && error.message
+            ? error.message
+            : "Unknown server error."
+
+    );
+
+}
+
+/* ==========================================================================
+   Section 5 - Results Renderer
+   ========================================================================== */
+
+/**
+ * --------------------------------------------------------------------------
+ * Result Rendering
+ * --------------------------------------------------------------------------
+ */
+
+function renderLookupResult(result) {
+
+    clearElement(UI.results);
+
+    if (!result ||
+        !result.variants ||
+        result.variants.length === 0) {
+
+        showPlaceholder(
+            "No results were found."
+        );
+
+        return;
+
+    }
+
+    const card = document.createElement("div");
+
+    card.className = "resultCard";
+
+    card.appendChild(
+        createResultHeader(result)
+    );
+
+    result.variants.forEach(variant => {
+
+        card.appendChild(
+            createVariantRow(variant)
+        );
+
+    });
+
+    UI.results.appendChild(card);
+
+}
+
+
+/**
+ * --------------------------------------------------------------------------
+ * Header
+ * --------------------------------------------------------------------------
+ */
+
+function createResultHeader(result) {
+
+    const container =
+        document.createElement("div");
+
+    const fish =
+        document.createElement("div");
+
+    fish.className = "resultTitle";
+
+    fish.textContent =
+        "🐟 " + result.fish;
+
+    const recipe =
+        document.createElement("div");
+
+    recipe.className = "recipeTitle";
+
+    recipe.textContent =
+        "🍳 " + result.recipe;
+
+    container.appendChild(fish);
+
+    container.appendChild(recipe);
+
+    return container;
+
+}
+
+
+/**
+ * --------------------------------------------------------------------------
+ * Variant Row
+ * --------------------------------------------------------------------------
+ */
+
+function createVariantRow(variant) {
+
+    const row =
+        document.createElement("div");
+
+    row.className = "variant";
+
+    const left =
+        document.createElement("div");
+
+    left.className = "variantName";
+
+    left.textContent =
+        getVariantIcon(
+            variant.label
+        ) +
+        " " +
+        variant.label;
+
+    const right =
+        document.createElement("div");
+
+    right.className = "variantValue";
+
+    right.textContent =
+        formatValue(
+            variant.value
+        );
+
+    row.appendChild(left);
+
+    row.appendChild(right);
+
+    return row;
+
+}
+
+
+/**
+ * --------------------------------------------------------------------------
+ * Variant Icons
+ * --------------------------------------------------------------------------
+ */
+
+function getVariantIcon(label) {
+
+    const text =
+        String(label)
+        .toLowerCase();
+
+    if (text.includes("dari")) {
+        return "🌿";
+    }
+
+    if (text.includes("heat")) {
+        return "🔥";
+    }
+
+    if (text.includes("sprout")) {
+        return "🌱";
+    }
+
+    if (text.includes("sl")) {
+        return "🌱";
+    }
+
+    return "⭐";
+
+}
+
+
+/**
+ * --------------------------------------------------------------------------
+ * Value Formatting
+ * --------------------------------------------------------------------------
+ */
+
+function formatValue(value) {
+
+    if (
+        value === null ||
+        value === undefined ||
+        value === ""
+    ) {
+
+        return "-";
+
+    }
+
+    const number =
+        Number(value);
+
+    if (!Number.isNaN(number)) {
+
+        return (
+            number.toLocaleString()
+            + " Gold"
+        );
+
+    }
+
+    return String(value);
+
+}
+
+
+/**
+ * --------------------------------------------------------------------------
+ * Clear Results
+ * --------------------------------------------------------------------------
+ */
+
+function clearResults() {
+
+    showPlaceholder(
+        "Select a fish and recipe to begin."
+    );
+
+}
+
+/* ==========================================================================
+   Section 6 - Application Controller
+   ========================================================================== */
+
+/**
+ * --------------------------------------------------------------------------
+ * Global Event Registration
+ * --------------------------------------------------------------------------
+ */
+
+document.addEventListener(
+    "keydown",
+    handleGlobalKeyDown
+);
+
+
+/**
+ * --------------------------------------------------------------------------
+ * Keyboard Navigation
+ * --------------------------------------------------------------------------
+ */
+
+function handleGlobalKeyDown(event) {
+
+    switch (event.key) {
+
+        case "ArrowDown":
+
+            moveFishSelection(1);
+
+            break;
+
+        case "ArrowUp":
+
+            moveFishSelection(-1);
+
+            break;
+
+        case "Enter":
+
+            if (
+                App.selectedFish &&
+                App.selectedRecipe &&
+                !App.loading
+            ) {
+
+                event.preventDefault();
+
+                performLookup();
+
+            }
+
+            break;
+
+        case "Escape":
+
+            UI.fishSearch.value = "";
+
+            UI.recipeSearch.value = "";
+
+            filterFishList();
+
+            filterRecipeList();
+
+            break;
+
+    }
+
+}
+
+
+/**
+ * --------------------------------------------------------------------------
+ * Move Fish Selection
+ * --------------------------------------------------------------------------
+ */
+
+function moveFishSelection(direction) {
+
+    if (App.filteredFish.length === 0) {
+        return;
+    }
+
+    let index =
+        App.filteredFish.indexOf(
+            App.selectedFish
+        );
+
+    if (index === -1) {
+
+        index = 0;
+
+    } else {
+
+        index += direction;
+
+    }
+
+    if (index < 0) {
+        index = 0;
+    }
+
+    if (index >= App.filteredFish.length) {
+
+        index =
+            App.filteredFish.length - 1;
+
+    }
+
+    selectFish(
+        App.filteredFish[index]
+    );
+
+    scrollSelectedFishIntoView();
+
+}
+
+
+/**
+ * --------------------------------------------------------------------------
+ * Scroll Selected Fish Into View
+ * --------------------------------------------------------------------------
+ */
+
+function scrollSelectedFishIntoView() {
+
+    const selected =
+        UI.fishList.querySelector(
+            ".selected"
+        );
+
+    if (!selected) {
+        return;
+    }
+
+    selected.scrollIntoView({
+
+        block: "nearest",
+
+        behavior: "smooth"
+
+    });
+
+}
+
+
+/**
+ * --------------------------------------------------------------------------
+ * Lookup Button State
+ * --------------------------------------------------------------------------
+ */
+
+function updateLookupState() {
+
+    enableLookup();
+
+}
+
+
+/**
+ * --------------------------------------------------------------------------
+ * Refresh Display
+ * --------------------------------------------------------------------------
+ */
+
+function refreshDisplay() {
+
+    renderFishList();
+
+    renderRecipeList();
+
+    updateLookupState();
+
+}
+
+
+/**
+ * --------------------------------------------------------------------------
+ * Focus Helpers
+ * --------------------------------------------------------------------------
+ */
+
+function focusFishSearch() {
+
+    UI.fishSearch.focus();
+
+}
+
+
+function focusRecipeSearch() {
+
+    UI.recipeSearch.focus();
+
+}
+
+
+/**
+ * --------------------------------------------------------------------------
+ * Application Ready
+ * --------------------------------------------------------------------------
+ */
+
+function applicationReady() {
+
+    refreshDisplay();
+
+    focusFishSearch();
+
+    setStatus(
+        "Ready"
+    );
+
+}
+
+
+/**
+ * --------------------------------------------------------------------------
+ * Replace the existing onRecipesLoaded()
+ * with this version.
+ * --------------------------------------------------------------------------
+ */
+
+function onRecipesLoaded(recipes) {
+
+    setRecipeList(recipes);
+
+    restorePreviousLookup();
+
+    setLoading(false);
+
+    applicationReady();
+
+}
+
+/* ==========================================================================
+   Part 8 - Settings Manager
+   ========================================================================== */
+
+/**
+ * --------------------------------------------------------------------------
+ * Initialise Settings Panel
+ * --------------------------------------------------------------------------
+ */
+
+function initialiseSettings() {
+
+    UI.settingHighlight =
+        document.getElementById(
+            "settingHighlight"
+        );
+
+    UI.settingRemember =
+        document.getElementById(
+            "settingRemember"
+        );
+
+    UI.saveSettingsButton =
+        document.getElementById(
+            "saveSettingsButton"
+        );
+
+    UI.saveSettingsButton.addEventListener(
+
+        "click",
+
+        saveSettings
+
+    );
+
+}
+
+
+/**
+ * --------------------------------------------------------------------------
+ * Populate Settings
+ * --------------------------------------------------------------------------
+ */
+
+function populateSettings() {
+
+    if (!App.settings) {
+
+        return;
+
+    }
+
+    UI.settingHighlight.checked =
+
+        App.settings.autoHighlight !== false;
+
+    UI.settingRemember.checked =
+
+        App.settings.rememberFish !== false;
+
+}
+
+
+/**
+ * --------------------------------------------------------------------------
+ * Save Settings
+ * --------------------------------------------------------------------------
+ */
+
+function saveSettings() {
+
+    setStatus(
+        "Saving settings..."
+    );
+
+    google.script.run
+
+        .withSuccessHandler(function () {
+
+            App.settings.autoHighlight =
+
+                UI.settingHighlight.checked;
+
+            App.settings.rememberFish =
+
+                UI.settingRemember.checked;
+
+            setStatus(
+                "Settings saved."
+            );
+
+        })
+
+        .withFailureHandler(
+            onServerError
+        )
+
+        .saveUserSettings({
+
+            autoHighlight:
+                UI.settingHighlight.checked,
+
+            rememberFish:
+                UI.settingRemember.checked
+
+        });
+
+}
+
+
+/**
+ * --------------------------------------------------------------------------
+ * Load Settings
+ * --------------------------------------------------------------------------
+ */
+
+function loadSettingsIntoUI(settings) {
+
+    App.settings = settings || {};
+
+    populateSettings();
+
+}
+
+
+/**
+ * --------------------------------------------------------------------------
+ * Apply User Settings
+ * --------------------------------------------------------------------------
+ */
+
+function applySettings() {
+
+    if (!App.settings) {
+
+        return;
+
+    }
+
+    UI.highlight.checked =
+
+        App.settings.autoHighlight !== false;
+
+}
+
+
+/**
+ * --------------------------------------------------------------------------
+ * Restore Previous Lookup
+ * --------------------------------------------------------------------------
+ */
+
+function restorePreviousLookup() {
+
+    if (!App.settings) {
+
+        return;
+
+    }
+
+    if (
+
+        App.settings.rememberFish &&
+
+        App.settings.lastFish
+
+    ) {
+
+        selectFish(
+
+            App.settings.lastFish
+
+        );
+
+        UI.fishSearch.value =
+
+            App.settings.lastFish;
+
+        filterFishList();
+
+    }
+
+    if (
+
+        App.settings.rememberFish &&
+
+        App.settings.lastRecipe
+
+    ) {
+
+        selectRecipe(
+
+            App.settings.lastRecipe
+
+        );
+
+        UI.recipeSearch.value =
+
+            App.settings.lastRecipe;
+
+        filterRecipeList();
+
+    }
+
+}
+
+
+/**
+ * --------------------------------------------------------------------------
+ * Reset Settings
+ * --------------------------------------------------------------------------
+ */
+
+function resetSettings() {
+
+    google.script.run
+
+        .withSuccessHandler(function () {
+
+            loadUserSettings();
+
+            setStatus(
+                "Settings reset."
+            );
+
+        })
+
+        .withFailureHandler(
+            onServerError
+        )
+
+        .resetUserSettings();
+
+}
+
+/* ==========================================================================
+   Part 9 - Help Panel
+   ========================================================================== */
+
+/**
+ * --------------------------------------------------------------------------
+ * Initialise Help Panel
+ * --------------------------------------------------------------------------
+ */
+
+function initialiseHelp() {
+
+    UI.helpPanel =
+        document.getElementById(
+            "helpPanel"
+        );
+
+}
+
+
+/**
+ * --------------------------------------------------------------------------
+ * Refresh Help Information
+ * --------------------------------------------------------------------------
+ */
+
+function refreshHelpPanel() {
+
+    google.script.run
+
+        .withSuccessHandler(
+            renderHelpInformation
+        )
+
+        .withFailureHandler(
+            onServerError
+        )
+
+        .getApplicationInformation();
+
+}
+
+
+/**
+ * --------------------------------------------------------------------------
+ * Render Help Information
+ * --------------------------------------------------------------------------
+ */
+
+function renderHelpInformation(info) {
+
+    if (!UI.helpPanel) {
+
+        return;
+
+    }
+
+    clearElement(UI.helpPanel);
+
+    const card =
+        document.createElement("section");
+
+    card.className =
+        "card";
+
+    card.innerHTML =
+
+        "<h2>❓ Help</h2>" +
+
+        "<p><strong>Application</strong><br>" +
+
+        escapeHtml(info.appName) +
+
+        "</p>" +
+
+        "<hr>" +
+
+        "<p><strong>Version</strong><br>" +
+
+        escapeHtml(info.version) +
+
+        "</p>" +
+
+        "<hr>" +
+
+        "<p><strong>Spreadsheet</strong><br>" +
+
+        escapeHtml(info.spreadsheetName) +
+
+        "</p>" +
+
+        "<hr>" +
+
+        "<p><strong>Fish Found</strong><br>" +
+
+        info.fishCount +
+
+        "</p>" +
+
+        "<hr>" +
+
+        "<p><strong>Recipes Found</strong><br>" +
+
+        info.recipeCount +
+
+        "</p>" +
+
+        "<hr>" +
+
+        "<p><strong>Last Refresh</strong><br>" +
+
+        escapeHtml(info.lastRefresh) +
+
+        "</p>";
+
+    UI.helpPanel.appendChild(card);
+
+}
+
+/* ==========================================================================
+   Part 10 - Application Controller
+   ========================================================================== */
+
+/**
+ * --------------------------------------------------------------------------
+ * Application Ready
+ * --------------------------------------------------------------------------
+ */
+
+function applicationReady() {
+
+    refreshDisplay();
+
+    restorePreviousLookup();
+
+    applySettings();
+
+    updateLookupState();
+
+    focusFishSearch();
+
+    setLoading(false);
+
+    setStatus("Ready");
+
+}
+
+
+/**
+ * --------------------------------------------------------------------------
+ * Refresh UI
+ * --------------------------------------------------------------------------
+ */
+
+function refreshDisplay() {
+
+    renderFishList();
+
+    renderRecipeList();
+
+}
+
+
+/**
+ * --------------------------------------------------------------------------
+ * Lookup Button State
+ * --------------------------------------------------------------------------
+ */
+
+function updateLookupState() {
+
+    const quantity =
+        Number(UI.quantity.value);
+
+    const enabled =
+
+        App.selectedFish !== null &&
+
+        App.selectedRecipe !== null &&
+
+        quantity > 0 &&
+
+        !App.loading;
+
+    UI.lookupButton.disabled = !enabled;
+
+}
+
+
+/**
+ * --------------------------------------------------------------------------
+ * Quantity Events
+ * --------------------------------------------------------------------------
+ */
+
+function initialiseQuantity() {
+
+    UI.quantity =
+        document.getElementById(
+            "quantityInput"
+        );
+
+    UI.quantity.addEventListener(
+
+        "input",
+
+        function () {
+
+            let value =
+                parseInt(
+                    UI.quantity.value,
+                    10
+                );
+
+            if (
+                Number.isNaN(value) ||
+                value < 1
+            ) {
+
+                value = 1;
+
+            }
+
+            UI.quantity.value = value;
+
+            updateLookupState();
+
+        }
+
+    );
+
+}
+
+
+/**
+ * --------------------------------------------------------------------------
+ * Focus Helpers
+ * --------------------------------------------------------------------------
+ */
+
+function focusFishSearch() {
+
+    if (UI.fishSearch) {
+
+        UI.fishSearch.focus();
+
+    }
+
+}
+
+
+/**
+ * --------------------------------------------------------------------------
+ * Keyboard Shortcuts
+ * --------------------------------------------------------------------------
+ */
+
+document.addEventListener(
+
+    "keydown",
+
+    function (event) {
+
+        if (
+
+            event.key === "Enter" &&
+
+            !UI.lookupButton.disabled
+
+        ) {
+
+            event.preventDefault();
+
+            performLookup();
+
+        }
+
+        if (
+
+            event.key === "Escape"
+
+        ) {
+
+            UI.fishSearch.value = "";
+
+            UI.recipeSearch.value = "";
+
+            filterFishList();
+
+            filterRecipeList();
+
+            focusFishSearch();
+
+        }
+
+    }
+
+);
+
+
+/**
+ * --------------------------------------------------------------------------
+ * Refresh After Selection
+ * --------------------------------------------------------------------------
+ */
+
+const originalSelectFish =
+    selectFish;
+
+selectFish = function (fish) {
+
+    originalSelectFish(fish);
+
+    updateLookupState();
+
+};
+
+
+const originalSelectRecipe =
+    selectRecipe;
+
+selectRecipe = function (recipe) {
+
+    originalSelectRecipe(recipe);
+
+    updateLookupState();
+
+};
+
+
+/**
+ * --------------------------------------------------------------------------
+ * Replace onRecipesLoaded()
+ * --------------------------------------------------------------------------
+ */
+
+function onRecipesLoaded(recipes) {
+
+    setRecipeList(recipes);
+
+    applicationReady();
+
+}
+
+
+/**
+ * --------------------------------------------------------------------------
+ * Startup Sequence
+ * --------------------------------------------------------------------------
+ */
+
+document.addEventListener(
+
+    "DOMContentLoaded",
+
+    function () {
+
+        cacheDom();
+
+        initialiseTabs();
+
+        initialiseFishSearch();
+
+        initialiseRecipeSearch();
+
+        initialiseQuantity();
+
+        initialiseSettings();
+
+        initialiseHelp();
+
+        disableLookup();
+
+        setLoading(true);
+
+        showPlaceholder(
+            "Loading assistant..."
+        );
+
+        loadUserSettings();
+
+    }
+
+);
+</script>
