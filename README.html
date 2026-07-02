@@ -1,0 +1,393 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+
+<meta charset="UTF-8">
+
+<style>
+
+body{
+
+    font-family:Arial, Helvetica, sans-serif;
+
+    margin:40px;
+
+    color:#243746;
+
+    line-height:1.6;
+
+}
+
+h1,h2{
+
+    color:#0F5E9C;
+
+}
+
+code{
+
+    background:#f3f3f3;
+
+    padding:2px 6px;
+
+    border-radius:4px;
+
+}
+
+pre{
+
+    background:#f5f5f5;
+
+    padding:12px;
+
+    border-radius:8px;
+
+    overflow:auto;
+
+}
+
+table{
+
+    border-collapse:collapse;
+
+    width:100%;
+
+}
+
+th,td{
+
+    border:1px solid #dddddd;
+
+    padding:8px;
+
+}
+
+th{
+
+    background:#f0f0f0;
+
+}
+
+</style>
+
+</head>
+
+<body>
+
+<h1>🐟 Palia Fish Assistant</h1>
+
+<p>
+Google Apps Script application for searching the
+<strong>Palia Profit Guide</strong>.
+</p>
+
+<p>
+The spreadsheet is the <strong>single source of truth</strong>.
+No fish names or recipes are hardcoded.
+Adding new rows or columns requires no code changes.
+</p>
+
+<hr>
+
+<h2>Features</h2>
+
+<ul>
+
+<li>Search fish by name</li>
+
+<li>Search recipes by name</li>
+
+<li>Automatically discovers new fish</li>
+
+<li>Automatically discovers new recipes</li>
+
+<li>Supports recipe variants</li>
+
+<li>Highlights matching spreadsheet cells</li>
+
+<li>Remembers previous lookup</li>
+
+<li>Uses Google Sheets as the data source</li>
+
+</ul>
+
+<hr>
+
+<h2>Project Files</h2>
+
+<table>
+
+<tr>
+<th>File</th>
+<th>Purpose</th>
+</tr>
+
+<tr>
+<td>Code.gs</td>
+<td>Main application entry point.</td>
+</tr>
+
+<tr>
+<td>Lookup.gs</td>
+<td>Spreadsheet lookup engine.</td>
+</tr>
+
+<tr>
+<td>Settings.gs</td>
+<td>User settings and preferences.</td>
+</tr>
+
+<tr>
+<td>Sidebar.html</td>
+<td>Main user interface.</td>
+</tr>
+
+<tr>
+<td>Styles.html</td>
+<td>Application styling.</td>
+</tr>
+
+<tr>
+<td>JavaScript.html</td>
+<td>Frontend logic.</td>
+</tr>
+
+<tr>
+<td>Readme.html</td>
+<td>Project documentation.</td>
+</tr>
+
+</table>
+
+<hr>
+
+<h2>Installation</h2>
+
+<ol>
+
+<li>Open the Google Sheet.</li>
+
+<li>Select <strong>Extensions → Apps Script</strong>.</li>
+
+<li>Create these files:</li>
+
+</ol>
+
+<pre>
+Code.gs
+Lookup.gs
+Settings.gs
+
+Sidebar.html
+Styles.html
+JavaScript.html
+
+Readme.html
+</pre>
+
+<p>Copy the generated code into each file.</p>
+
+<p>Save the project.</p>
+
+<p>Run:</p>
+
+<pre>
+onOpen()
+</pre>
+
+<p>Authorise the project when prompted.</p>
+
+<p>Reload the spreadsheet.</p>
+
+<p>You should now see:</p>
+
+<pre>
+🐟 Fish Assistant
+</pre>
+
+<hr>
+
+<h2>Using the Assistant</h2>
+
+<ol>
+
+<li>Open <strong>🐟 Fish Assistant → Open Assistant</strong>.</li>
+
+<li>Select a fish.</li>
+
+<li>Select a recipe.</li>
+
+<li>Click <strong>🔍 Look Up</strong>.</li>
+
+<li>The matching worksheet cells are highlighted.</li>
+
+</ol>
+
+<hr>
+
+<h2>Spreadsheet Layout</h2>
+
+<p>The workbook must contain:</p>
+
+<ul>
+
+<li>A header row containing recipe names.</li>
+
+<li>One fish per row.</li>
+
+<li>Recipe values beneath each recipe column.</li>
+
+</ul>
+
+<p>Example:</p>
+
+<pre>
+Fish
+
+Poke Bowl Dari
+Poke Bowl SL / Sprout
+
+Fish Stew Dari
+Fish Stew SL / Sprout
+</pre>
+
+<hr>
+
+<h2>Recipe Variants</h2>
+
+<p>
+Selecting <strong>Poke Bowl</strong> automatically searches:
+</p>
+
+<pre>
+Poke Bowl Dari
+Poke Bowl SL / Sprout
+</pre>
+
+<p>
+Selecting <strong>Fish Stew</strong> automatically searches:
+</p>
+
+<pre>
+Fish Stew Dari
+Fish Stew SL / Sprout
+</pre>
+
+<p>
+Additional variants are discovered automatically from the spreadsheet.
+</p>
+
+<hr>
+
+<h2>User Settings</h2>
+
+<p>Stored using <code>PropertiesService.getUserProperties()</code>.</p>
+
+<ul>
+
+<li>Theme</li>
+
+<li>Highlight enabled</li>
+
+<li>Remember last fish</li>
+
+<li>Remember last recipe</li>
+
+</ul>
+
+<hr>
+
+<h2>Troubleshooting</h2>
+
+<h3>Fish Assistant menu missing</h3>
+
+<p>Run:</p>
+
+<pre>
+onOpen()
+</pre>
+
+<p>Then reload the spreadsheet.</p>
+
+<h3>Sidebar won't load</h3>
+
+<p>Check the Apps Script execution log for errors.</p>
+
+<h3>Function not found</h3>
+
+<p>Ensure every generated file has been copied into the project.</p>
+
+<h3>No lookup results</h3>
+
+<ul>
+
+<li>Verify the fish exists.</li>
+
+<li>Verify the recipe exists.</li>
+
+<li>Ensure the worksheet name has not changed.</li>
+
+</ul>
+
+<hr>
+
+<h2>Architecture</h2>
+
+<pre>
+Google Sheet
+      │
+      ▼
+Lookup.gs
+      │
+      ▼
+Public API
+      │
+      ▼
+JavaScript.html
+      │
+      ▼
+Sidebar.html
+      │
+      ▼
+User
+</pre>
+
+<p>
+The spreadsheet remains the only source of data.
+Nothing is hardcoded.
+</p>
+
+<hr>
+
+<h2>Future Improvements</h2>
+
+<ul>
+
+<li>⭐ Favourite fish</li>
+
+<li>⭐ Recent lookups</li>
+
+<li>⭐ Profit colour coding</li>
+
+<li>⭐ Dark mode</li>
+
+<li>⭐ Profit comparison charts</li>
+
+<li>⭐ Best recipe recommendations</li>
+
+<li>⭐ Search performance improvements</li>
+
+</ul>
+
+<hr>
+
+<p><strong>Palia Fish Assistant</strong><br>
+Version 1.0</p>
+
+<p>
+Designed to work directly from the Palia Profit Guide spreadsheet using live data.
+</p>
+
+</body>
+</html>
